@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+name = "pypi"
+
+[packages]
+flask = "*"
+flask_socketio = "*"
+tekore = "*"
+flask_cors = "*"
+uvicorn = "*"
+eventlet = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "*"
