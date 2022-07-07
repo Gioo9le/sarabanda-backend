@@ -1,6 +1,7 @@
 import enum
 from random import choice, randint, sample
 from typing import Optional, Any, List
+import os
 
 import tekore as tk
 from flask import Flask, request, redirect
