@@ -1,17 +1,11 @@
-from typing import Optional, Sequence, Any, List
-
-import NotFound as NotFound
-import optional as optional
-import uvicorn as uvicorn
-from flask import Flask, request, redirect
-from flask_socketio import SocketIO
-import tekore as tk
-from flask_cors import CORS, cross_origin
-from random import choice, randint, choices, sample
-import os
-
-
 import enum
+from random import choice, randint, sample
+from typing import Optional, Any, List
+
+import tekore as tk
+from flask import Flask, request, redirect
+from flask_cors import CORS
+
 
 class GameStates(enum.Enum):
     day = 1
