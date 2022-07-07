@@ -101,5 +101,5 @@ def get_artists():
 
 if __name__ == '__main__':
     print("Server starting")
-    app.run(port=5000)
+    app.run(port=(os.getenv('PORT', 5000)))
 
