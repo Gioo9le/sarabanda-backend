@@ -82,8 +82,6 @@ def get_songs():
         for song in id_top_4_related_artist:
             result.append(song)
         print(result)
-    except IndexError:
-        return
     except:
         generic_error = True
 
