@@ -114,5 +114,5 @@ def get_artists():
 
 if __name__ == '__main__':
     print("Server starting")
-    uvicorn.run(app, port=(os.getenv('PORT', 5000)))
+    uvicorn.run("main:app", port=(os.getenv('PORT', 5000)))
 
