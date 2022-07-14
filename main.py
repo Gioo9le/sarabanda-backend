@@ -1,11 +1,13 @@
 import enum
+import os
 from random import choice, randint, sample
 from typing import Optional, Any, List
-import os
 
 import tekore as tk
-from flask import Flask, request, redirect
-from flask_cors import CORS
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 
 class GameStates(enum.Enum):
@@ -14,8 +16,19 @@ class GameStates(enum.Enum):
     vote = 3
 
 
-app = Flask(__name__)
-CORS(app)
+app = FastAPI()
+
+origins = [
+    '*'
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 cred = tk.RefreshingCredentials(client_id="3d5c756645874d03a6ddb0b5b2e3574c",
@@ -26,8 +39,7 @@ spotify: tk.Spotify
 my_playlist: Optional[List[Any]] = None
 
 
-
-@app.route("/")
+@app.get("/")
 def hello_world():
     return '''<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
 <script type="text/javascript" charset="utf-8">
@@ -41,19 +53,17 @@ def hello_world():
 def login():
     return cred.user_authorisation_url(scope=tk.scope.playlist_read_private)
 
-@app.route("/code")
-def get_access_token():
+@app.get("/code")
+def get_access_token(code: str):
     global spotify
     global my_playlist
-    print(request.host)
-    # print(request.args.get('code'))
-    token = cred.request_user_token(request.args.get('code'))
+    token = cred.request_user_token(code)
     # print(token)
     spotify = tk.Spotify(token)
     my_playlist_id = spotify.playlists(spotify.current_user().id).items[1].id
     my_playlist = spotify.playlist(my_playlist_id).tracks.items
     # print(spotify.playlists(spotify.current_user().id).items[0])
-    return redirect('http://localhost:3000/play')
+    return RedirectResponse('http://localhost:3000/play')
 
 @app.get('/song')
 def get_songs():
@@ -72,6 +82,8 @@ def get_songs():
         for song in id_top_4_related_artist:
             result.append(song)
         print(result)
+    except IndexError:
+        return
     except:
         generic_error = True
 
@@ -102,5 +114,5 @@ def get_artists():
 
 if __name__ == '__main__':
     print("Server starting")
-    app.run(port=(os.getenv('PORT', 5000)))
+    uvicorn.run(app, port=(os.getenv('PORT', 5000)))
 
