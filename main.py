@@ -33,7 +33,7 @@ app.add_middleware(
 
 cred = tk.RefreshingCredentials(client_id="3d5c756645874d03a6ddb0b5b2e3574c",
                       client_secret="a2ad98b4e0dd4b39bd06a07abb4a7b34",
-                      redirect_uri='http://localhost:5000/code')
+                      redirect_uri='https://musiquizzz.herokuapp.com/code')
 
 spotify: tk.Spotify
 my_playlist: Optional[List[Any]] = None
@@ -63,7 +63,7 @@ def get_access_token(code: str):
     my_playlist_id = spotify.playlists(spotify.current_user().id).items[1].id
     my_playlist = spotify.playlist(my_playlist_id).tracks.items
     # print(spotify.playlists(spotify.current_user().id).items[0])
-    return RedirectResponse('http://localhost:3000/play')
+    return RedirectResponse('https://musiquizzz.web.app/play')
 
 @app.get('/song')
 def get_songs():
