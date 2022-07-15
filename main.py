@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from backend.config import F_HOSTNAME, B_HOSTNAME
+from config import F_HOSTNAME, B_HOSTNAME
 
 
 class GameStates(enum.Enum):
