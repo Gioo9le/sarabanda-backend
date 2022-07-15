@@ -1,6 +1,7 @@
 import enum
 import os
 from random import choice, randint, sample
+from time import sleep
 from typing import Optional, Any, List
 
 import tekore as tk
@@ -73,6 +74,9 @@ def get_songs():
     global spotify
     global my_playlist
     generic_error = False
+    while my_playlist is None:
+        sleep(0.2)
+        print("No playlist")
     try:
         song_correct_all = choice(my_playlist)
         song_correct = song_correct_all.track
