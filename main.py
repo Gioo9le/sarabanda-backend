@@ -10,6 +10,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
+from backend.config import F_HOSTNAME, B_HOSTNAME
+
 
 class GameStates(enum.Enum):
     day = 1
@@ -33,7 +35,7 @@ app.add_middleware(
 cred = tk.RefreshingCredentials(
     client_id="3d5c756645874d03a6ddb0b5b2e3574c",
     client_secret="a2ad98b4e0dd4b39bd06a07abb4a7b34",
-    redirect_uri="https://musiquizzz.herokuapp.com/code",
+    redirect_uri=f"{B_HOSTNAME}/code",
 )
 
 spotify: tk.Spotify
@@ -64,9 +66,9 @@ def get_access_token(code: str):
     # print(token)
     spotify = tk.Spotify(token)
     my_playlist_id = spotify.playlists(spotify.current_user().id).items[1].id
-    my_playlist = spotify.playlist(my_playlist_id).tracks.items
+    my_playlist = spotify.playlist(my_playlist_id).tracks.items.copy()
     # print(spotify.playlists(spotify.current_user().id).items[0])
-    return RedirectResponse("https://musiquizzz.web.app/play")
+    return RedirectResponse(f"{F_HOSTNAME}/play")
 
 
 @app.get("/song")
@@ -74,9 +76,6 @@ def get_songs():
     global spotify
     global my_playlist
     generic_error = False
-    while my_playlist is None:
-        sleep(0.2)
-        print("No playlist")
     try:
         song_correct_all = choice(my_playlist)
         song_correct = song_correct_all.track
