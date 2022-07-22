@@ -1,23 +1,18 @@
-import enum
 import os
+from dataclasses import dataclass
 from random import choice, randint, sample
-from time import sleep
 from typing import Optional, Any, List
 
 import tekore as tk
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from redis import Redis
 
-from config import F_HOSTNAME, B_HOSTNAME
+from config import F_HOSTNAME, B_HOSTNAME, REDIS_URL
 
-
-class GameStates(enum.Enum):
-    day = 1
-    night = 2
-    vote = 3
-
+ROCK_PLAYLIST = '4jOqGKvV7iu0ojea2pt9Te?si=843dc28cc8954a00'
 
 app = FastAPI()
 
@@ -32,25 +27,30 @@ app.add_middleware(
 )
 
 
-cred = tk.RefreshingCredentials(
+cred = tk.Credentials(
     client_id="3d5c756645874d03a6ddb0b5b2e3574c",
     client_secret="a2ad98b4e0dd4b39bd06a07abb4a7b34",
     redirect_uri=f"{B_HOSTNAME}/code",
 )
 
-spotify: tk.Spotify
-my_playlist: Optional[List[Any]] = None
+# spotify: tk.Spotify
+# my_playlist: Optional[List[Any]] = None
 
+@dataclass
+class User:
+    code: str
+    client: tk.Spotify
 
-@app.get("/")
-def hello_world():
-    return """<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
-<script type="text/javascript" charset="utf-8">
-    var socket = io("localhost:5000", {auth : {id: window.localStorage.getItem('sessionId')}});
-    socket.on("connect", function() {
-        socket.emit("my event", {data: "I connected!"});
-    });
-</script>"""
+async def get_user(code: str) -> User:
+    r = Redis.from_url(REDIS_URL)
+    token = r.get(code).decode("utf-8")
+    print(token)
+    client = tk.Spotify(token)
+    return User(
+        code=code,
+        client=client
+    )
+
 
 
 @app.get("/login")
@@ -60,32 +60,33 @@ def login():
 
 @app.get("/code")
 def get_access_token(code: str):
-    global spotify
-    global my_playlist
-    token = cred.request_user_token(code)
-    # print(token)
-    spotify = tk.Spotify(token)
-    my_playlist_id = spotify.playlists(spotify.current_user().id).items[1].id
-    my_playlist = spotify.playlist(my_playlist_id).tracks.items.copy()
-    # print(spotify.playlists(spotify.current_user().id).items[0])
-    return RedirectResponse(f"{F_HOSTNAME}/play")
+    # global spotify
+    # global my_playlist
+    r = Redis.from_url(REDIS_URL)
+    token = cred.request_user_token(code).access_token
+    r.set(code, token, ex=600)
+    # spotify = tk.Spotify(token)
+    # my_playlist_id = spotify.playlists(spotify.current_user().id).items[1].id
+    # my_playlist = spotify.playlist(my_playlist_id).tracks.items
+    return RedirectResponse(f"{F_HOSTNAME}/login/{code}")
 
 
 @app.get("/song")
-def get_songs():
-    global spotify
-    global my_playlist
+def get_songs(user: User = Depends(get_user)):
+    my_playlist_id = user.client.playlists(user.client.current_user().id).items[1].id
+    my_playlist = user.client.playlist(ROCK_PLAYLIST).tracks.items
+
     generic_error = False
     try:
         song_correct_all = choice(my_playlist)
         song_correct = song_correct_all.track
         my_playlist.remove(song_correct_all)
         result = [((song_correct.artists[0].name, True), (song_correct.name, True))]
-        related_artists = spotify.artist_related_artists(song_correct.artists[0].id)
+        related_artists = user.client.artist_related_artists(song_correct.artists[0].id)
         id_top_4_related_artist = [
             (
                 (artist.name, False),
-                (spotify.artist_top_tracks(artist.id, "IT")[randint(0, 4)].name, False),
+                (user.client.artist_top_tracks(artist.id, "IT")[randint(0, 4)].name, False),
             )
             for artist in sample(
                 related_artists,
@@ -105,12 +106,12 @@ def get_songs():
             song_correct = song_correct_all.track
             my_playlist.remove(song_correct_all)
             result = [((song_correct.artists[0].name, True), (song_correct.name, True))]
-            related_artists = spotify.artist_related_artists(song_correct.artists[0].id)
+            related_artists = user.client.artist_related_artists(song_correct.artists[0].id)
             id_top_4_related_artist = [
                 (
                     (artist.name, False),
                     (
-                        spotify.artist_top_tracks(artist.id, "IT")[randint(0, 4)].name,
+                        user.client.artist_top_tracks(artist.id, "IT")[randint(0, 4)].name,
                         False,
                     ),
                 )
@@ -130,7 +131,8 @@ def get_songs():
 
 
 @app.get("/artist")
-def get_artists():
+def get_artists(request: Request):
+    print(request)
     return None
 
 
