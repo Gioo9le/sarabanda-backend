@@ -47,9 +47,9 @@ async def get_user(code: str) -> User:
     r = Redis.from_url(REDIS_URL)
     token = r.get(code).decode("utf-8")
     playlist_id = r.get(f"{code}:playlist").decode('utf-8') if r.get(f"{code}:playlist") is not None else None
-    print(token)
+    username = r.get(f"{code}:username").decode('utf-8') if r.get(f"{code}:playlist") is not None else None
     client = tk.Spotify(token)
-    print(client.current_user().display_name)
+    print(username)
     return User(
         code=code,
         client=client,
@@ -70,6 +70,9 @@ def get_access_token(code: str):
     r = Redis.from_url(REDIS_URL)
     token = cred.request_user_token(code).access_token
     r.set(code, token, ex=600)
+    client = tk.Spotify(token)
+    username = client.current_user().display_name
+    r.set(f"{code}:username", username)
     # spotify = tk.Spotify(token)
     # my_playlist_id = spotify.playlists(spotify.current_user().id).items[1].id
     # my_playlist = spotify.playlist(my_playlist_id).tracks.items
