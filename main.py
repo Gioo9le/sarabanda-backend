@@ -13,6 +13,7 @@ from redis import Redis
 from config import F_HOSTNAME, B_HOSTNAME, REDIS_URL
 
 ROCK_PLAYLIST = '4jOqGKvV7iu0ojea2pt9Te?si=843dc28cc8954a00'
+POP_PLAYLIST = '6mtYuOxzl58vSGnEDtZ9uB?si=8f9fe155c5374268'
 
 app = FastAPI()
 
@@ -40,15 +41,18 @@ cred = tk.Credentials(
 class User:
     code: str
     client: tk.Spotify
+    playlist_id: Optional[str]
 
 async def get_user(code: str) -> User:
     r = Redis.from_url(REDIS_URL)
     token = r.get(code).decode("utf-8")
+    playlist_id = r.get(f"{code}:playlist").decode('utf-8') if r.get(f"{code}:playlist") is not None else None
     print(token)
     client = tk.Spotify(token)
     return User(
         code=code,
-        client=client
+        client=client,
+        playlist_id=playlist_id
     )
 
 
@@ -74,7 +78,7 @@ def get_access_token(code: str):
 @app.get("/song")
 def get_songs(user: User = Depends(get_user)):
     my_playlist_id = user.client.playlists(user.client.current_user().id).items[1].id
-    my_playlist = user.client.playlist(ROCK_PLAYLIST).tracks.items
+    my_playlist = user.client.playlist(user.playlist_id).tracks.items
 
     generic_error = False
     try:
@@ -128,6 +132,18 @@ def get_songs(user: User = Depends(get_user)):
             generic_error = True
 
     return {"songs_artists": result, "current_playing": song_correct.preview_url}
+
+@app.get('/playlists')
+def get_playlists():
+    return [
+        {'name': 'ROCK', 'id': '4jOqGKvV7iu0ojea2pt9Te'},
+        {'name': 'POP', 'id': '6mtYuOxzl58vSGnEDtZ9uB'}
+    ]
+
+@app.get('/setplaylist')
+def set_playlist(playlist_id: str, user: User = Depends(get_user)):
+    r = Redis.from_url(REDIS_URL)
+    r.set(f"{user.code}:playlist", playlist_id)
 
 
 @app.get("/artist")
