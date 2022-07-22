@@ -49,6 +49,7 @@ async def get_user(code: str) -> User:
     playlist_id = r.get(f"{code}:playlist").decode('utf-8') if r.get(f"{code}:playlist") is not None else None
     print(token)
     client = tk.Spotify(token)
+    print(client.current_user().display_name)
     return User(
         code=code,
         client=client,
@@ -137,7 +138,13 @@ def get_songs(user: User = Depends(get_user)):
 def get_playlists():
     return [
         {'name': 'ROCK', 'id': '4jOqGKvV7iu0ojea2pt9Te'},
-        {'name': 'POP', 'id': '6mtYuOxzl58vSGnEDtZ9uB'}
+        {'name': 'POP', 'id': '6mtYuOxzl58vSGnEDtZ9uB'},
+        {'name': 'RAP', 'id': '37i9dQZF1DWSxF6XNtQ9Rg'},
+        {'name': 'EDM', 'id': '37i9dQZF1DX3Kdv0IChEm9'},
+        {'name': 'CANTAUTORI', 'id': '37i9dQZF1DX3EvTrESVmN6'},
+        {'name': 'INDIE', 'id': '37i9dQZF1DX6ShdbyN9CkW'},
+        {'name': 'ALTERNATIVE', 'id': '37i9dQZF1DX9GRpeH4CL0S'},
+        {'name': 'TOP100', 'id': '3IsxzDS04BvejFJcQ0iVyW'},
     ]
 
 @app.get('/setplaylist')
